@@ -6,7 +6,7 @@
 #include <iostream>
 
 #define MAX_NUMBER_OF_VERTEX 16
-#define DEBUG
+//#define DEBUG
 
 using namespace std;
 
@@ -16,6 +16,8 @@ public:
 	IncidencyMatrix()
 	{
 		this->numberOfVertices = 0;
+		this->numberOfEdges = 0;
+		this->matrix = vector<vector<bool>>();
 	}
 
 	~IncidencyMatrix()
@@ -25,22 +27,36 @@ public:
 
 	void init(const int n)
 	{
-		this->numberOfVertices = n;
 		this->clearGraph();
+		this->numberOfVertices = n;
 		this->initialVertices();
 	}
 
 	void addVertex()
 	{
-		vector<bool> temp;
+		vector<bool> temp(this->numberOfEdges, false);
 		this->matrix.push_back(temp);
 		++this->numberOfVertices;
 	}
 
 	void addVertex(const int vertex)
 	{
-		vector<bool> temp = vector<bool>(false, this->numberOfEdges());
+		vector<bool> temp = vector<bool>(this->numberOfEdges, false);
 		this->matrix.insert(this->matrix.begin() + vertex - 1, temp);
+		++this->numberOfVertices;
+	}
+
+	void deleteVertex(const int vertex)
+	{
+
+		int edges = this->numberOfEdges - 1;
+		for (int i = edges; i >= 0; i--)
+		{
+			if (this->matrix[vertex][i])
+				this->deleteEdge(i);
+		}
+		this->matrix.erase(this->matrix.begin() + vertex);
+		--this->numberOfVertices;
 	}
 
 	void addEdge(const int vertex1, const int vertex2)
@@ -49,8 +65,9 @@ public:
 		{
 			it->push_back(false);
 		}
-		*this->matrix[vertex1].end() = true;
-		*this->matrix[vertex2].end() = true;
+		this->matrix[vertex1][this->numberOfEdges] = true;
+		this->matrix[vertex2][this->numberOfEdges] = true;
+		++this->numberOfEdges;
 	}
 
 	bool isEdge(const int u, const int v)
@@ -61,9 +78,100 @@ public:
 		return false;
 	}
 
+	void deleteEdge(const int u, const int v)
+	{
+		int edge = this->findEdge(u, v);
+		if (edge >= 0)
+		{
+			this->deleteEdge(edge);
+			--this->numberOfEdges;
+		}
+	}
+
+	bool operator ==(IncidencyMatrix* other)
+	{
+		if (this->order() != other->order())
+			return false;
+		if (this->numberOfEdges != other->numberOfEdges)
+			return false;
+
+		for (int i = 0; i < this->numberOfVertices; i++)
+		{
+			for (int j = 0; j < this->numberOfEdges; j++)
+			{
+				if (this->matrix[i][j] != other->matrix[i][j])
+					return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool operator !=(IncidencyMatrix* other)
+	{
+		if (this->order() != other->order())
+			return true;
+		if (this->numberOfEdges != other->numberOfEdges)
+			return true;
+
+		for (int i = 0; i < this->numberOfVertices; i++)
+		{
+			for (int j = 0; j < this->numberOfEdges; j++)
+			{
+				if (this->matrix[i][j] != other->matrix[i][j])
+					return true;
+			}
+		}
+
+		return false;
+	}
+
+	int order()
+	{
+		return this->numberOfVertices;
+	}
+
+	void setNumbersOfVertices(const int n)
+	{
+		this->numberOfVertices = n;
+	}
+
+	int getNumberOfEdges()
+	{
+		return this->numberOfEdges;
+	}
+
+	void print()
+	{
+		cout << "E" << this->numberOfEdges << "\n";
+		for (int i = 0; i < this->numberOfVertices; i++)
+		{
+			cout << "V" << i + 1;
+			if (i < 9)
+				cout << " ";
+			cout << " ";
+
+			for (int j = 0; j < this->numberOfEdges; j++)
+			{
+				cout << to_string(this->matrix[i][j]) << " ";
+			}
+			cout << "\n";
+		}
+	}
+
+private:
+
+	void deleteEdge(const int edge)
+	{
+		for (vector<vector<bool>>::iterator it = this->matrix.begin(); it != this->matrix.end(); it++)
+		{
+			it->erase(it->begin() + edge);
+		}
+	}
+
 	int findEdge(const int u, const int v)
 	{
-		for (int i = 0; i < this->numberOfEdges(); i++)
+		for (int i = 0; i < this->numberOfEdges; i++)
 		{
 			//both '1'
 			if (this->matrix[u][i] && this->matrix[v][i])
@@ -72,48 +180,9 @@ public:
 		return -1;
 	}
 
-	void deleteEdge(const int u, const int v)
-	{
-		int edge = this->findEdge(u, v);
-		if (edge >= 0)
-		{
-			for (vector<vector<bool>>::iterator it = this->matrix.begin(); it != this->matrix.end(); it++)
-			{
-				it->erase(it->begin() + edge);
-			}
-		}
-	}
-
-	int isEqual(IncidencyMatrix& other)
-	{
-		if (this->order() != other.order())
-			return false;
-		if (this->numberOfEdges() != other.numberOfEdges())
-			return false;
-
-		for (vector<vector<bool>>::iterator it = this->matrix.begin(); it != this->matrix.end(); it++)
-		{
-			for()
-		}
-
-		return true;
-	}
-
-	int order()
-	{
-		return this->numberOfVertices;
-	}
-
-private:
-
-	int numberOfEdges()
-	{
-		return this->matrix[0].size();
-	}
-
 	void initialVertices()
 	{
-		for (int i = 0; i < this->numberOfVertices; ++i)
+		for (int i = 0; i < this->numberOfVertices; i++)
 		{
 			vector<bool> temp = vector<bool>();
 			this->matrix.push_back(temp);
@@ -127,11 +196,14 @@ private:
 			it->clear();
 		}
 		this->matrix.clear();
+		this->numberOfEdges = 0;
+		this->numberOfVertices = 0;
 	}
 
 	vector<vector<bool>> matrix;
-	int numberOfVertices;
+	int numberOfVertices, numberOfEdges;
 };
+
 
 static PyObject* G6Error;
 static PyObject* NoVerticesError;
@@ -139,186 +211,318 @@ static PyObject* TooManyVerticesError;
 
 typedef struct {
 	PyObject_HEAD
-		int numberOfVertices;
-	IncidencyMatrix* incidencyMatrix;
+		IncidencyMatrix* incidencyMatrix;
 } SimpleGraph;
 
-static PyObject* SimpleGraph__new__(PyTypeObject * type, PyObject * args) {
-	return type->tp_alloc(type, 0);
+string toBinary(int number)
+{
+	auto res = string("");
+	for (int i = 0; i < 6; i++) {
+		res = to_string(number % 2) + res;
+		number /= 2;
+	}
+	return res;
 }
 
-static void SimpleGraph__del__(SimpleGraph * self) {
-	delete[] self->incidencyMatrix;
-	Py_TYPE(self)->tp_free((PyObject*)self);
+bool createGraph(SimpleGraph* self, string text)
+{
+	if (text.empty())
+	{
+		PyErr_SetString(G6Error, "text is empty");
+		return false;
+	}
+
+	int tmp = (int)text[0] - 63;
+	if (tmp > MAX_NUMBER_OF_VERTEX || tmp < 1)
+	{
+		PyErr_SetString(G6Error, "wrong number of vertices");
+		return false;
+	}
+
+	string binaryForm = "";
+
+	for (int i = 1; i < (int)text.size(); i++)
+	{
+		int asciiValue = (int)text[i] - 63;
+		if (asciiValue > 63 || asciiValue < 0)
+		{
+			PyErr_SetString(G6Error, "invalid values in");
+			return false;
+		}
+		binaryForm += toBinary(asciiValue);
+	}
+
+	int strPtr = 0;
+
+	self->incidencyMatrix->init(tmp);
+	for (int i = 0; i < tmp; i++)
+	{
+		for (int j = 0; j < i; j++)
+		{
+			if (binaryForm[strPtr++] == '1')
+				self->incidencyMatrix->addEdge(i, j);
+		}
+	}
+	return true;
 }
 
-static PyObject* SimpleGraph__new__(PyTypeObject* type, PyObject* args) {
-	return type->tp_alloc(type, 0);
-}
-
-static void SimpleGraph__del__(SimpleGraph* self) {
+static PyObject* SimpleGraph__new__(PyTypeObject * type, PyObject * args)
+{
 #ifdef DEBUG
-	printf("Delete\n");
-#endif // DEBUG
-
-	delete[] self->incidencyMatrix;
-	Py_TYPE(self)->tp_free((PyObject*)self);
+	printf("New Begin\n");
+#endif
+	return type->tp_alloc(type, 0);
 }
 
-static PyObject* fromString(SimpleGraph* self, PyObject* args) {
-	char* arg;
-	if (!PyArg_ParseTuple(args, "|s", &arg)) {
-		return NULL;
-	}
-	if (!convertFromString(self, std::string(arg))) {
-		return NULL;
-	}
-	return Py_None;
-}
-
-static int SimpleGraph__init__(SimpleGraph* self, PyObject* args) {
+static int SimpleGraph__init__(SimpleGraph* self, PyObject* args)
+{
+#ifdef DEBUG
+	printf("Init Begin n = ");
+#endif
 	char* arg = NULL;
 
-	if (!PyArg_ParseTuple(args, "|z", &arg)) {
+	if (!PyArg_ParseTuple(args, "|z", &arg))
+	{
+#ifdef DEBUG
+		printf("\n");
+#endif
 		return -1;
 	}
-	self->listOfAdjacency = new List[MAX_NUMBER_OF_VERTEX];
-	if (arg == NULL) {
-		self->numberOfVertex = 1;
+
+	self->incidencyMatrix = new IncidencyMatrix();
+	if (arg == NULL)
+	{
+#ifdef DEBUG
+		printf("1\n");
+#endif
+		self->incidencyMatrix->init(1);
 		return 0;
 	}
-	if (!convertFromString(self, std::string(arg))) {
+
+	if (!createGraph(self, string(arg)))
+	{
+#ifdef DEBUG
+		cout << string(arg) << "\n";
+#endif
 		return -1;
 	}
+
+#ifdef DEBUG
+	printf("\n");
+#endif
 
 	return 0;
 }
 
-static PyObject* SimpleGraph__str__(SimpleGraph* self) {
-	return PyUnicode_FromString(convertToG6Format(self).c_str());
+static void SimpleGraph__del__(SimpleGraph* self)
+{
+#ifdef DEBUG
+	cout << "Delete Begin\n";
+	self->incidencyMatrix->print();
+#endif
+
+	delete self->incidencyMatrix;
+	Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
-static PyObject* SimpleGraph__comp__(SimpleGraph* self, PyObject* args, int op) {
+static PyObject* fromString(SimpleGraph* self, PyObject* args)
+{
+	char* arg;
+	if (!PyArg_ParseTuple(args, "|s", &arg))
+		return NULL;
+
+	if (!createGraph(self, string(arg)))
+		return NULL;
+
+	return Py_None;
+}
+
+string edgesToBinary(SimpleGraph* self)
+{
+	string binaryForm = "";
+
+	for (int i = 0; i < self->incidencyMatrix->order(); i++)
+	{
+		for (int j = 0; j < i; j++)
+		{
+			binaryForm += self->incidencyMatrix->isEdge(i, j) ? "1" : "0";
+		}
+	}
+
+	while (binaryForm.size() % 6 != 0)
+		binaryForm += "0";
+
+	return binaryForm;
+}
+
+string toG6(SimpleGraph* self)
+{
+	char firstChar = self->incidencyMatrix->order() + 63;
+	string result = "";
+
+	result.push_back(firstChar);
+	string binaryForm = edgesToBinary(self);
+	for (int i = 0; i < (int)(binaryForm.size() / 6); i++)
+	{
+		char tmp = 63;
+		for (int j = 5; j >= 0; j--)
+		{
+			if (binaryForm[i * 6 + j] == '1')
+				tmp += (int)pow(2, 5 - j);
+		}
+		result.push_back(tmp);
+	}
+	return result;
+}
+
+static PyObject* SimpleGraph__str__(SimpleGraph* self)
+{
+	return PyUnicode_FromString(toG6(self).c_str());
+}
+
+static PyObject* SimpleGraph__comp__(SimpleGraph* self, PyObject* args, int op)
+{
 	SimpleGraph* other = (SimpleGraph*)args;
-	bool result = compare(self, other);
-	if (op == Py_EQ) {
+	bool result = (self->incidencyMatrix == other->incidencyMatrix);
+	if (op == Py_EQ)
+	{
 		return PyBool_FromLong(result);
 	}
-	if (op == Py_NE) {
+	if (op == Py_NE)
+	{
 		return PyBool_FromLong(!result);
 	}
 	return PyBool_FromLong(0);
 }
 
 //METODY
-static PyObject* order(SimpleGraph* self) {
+static PyObject* order(SimpleGraph* self)
+{
 #ifdef DEBUG
-	//printf("Order\n");
-	//printEdges(self);
+	printf("Order\n");
 #endif
 
-	return PyLong_FromLong((long)self->numberOfVertex);
+	return PyLong_FromLong((long)self->incidencyMatrix->order());
 }
 
-static PyObject* deleteEdge(SimpleGraph* self, PyObject* args) {
+static PyObject* deleteEdge(SimpleGraph* self, PyObject* args)
+{
 #ifdef DEBUG
 	printf("Delete edge\n");
-	printEdges(self);
 #endif
 
 	int v1, v2;
-	if (!PyArg_ParseTuple(args, "|ii", &v1, &v2)) {
+	if (!PyArg_ParseTuple(args, "|ii", &v1, &v2))
 		return NULL;
-	}
-	removeEdge(self, v1, v2);
+
+	self->incidencyMatrix->deleteEdge(v1, v2);
+
+#ifdef DEBUG
+	printf("V%d -> V%d\n", v1 + 1, v2 + 1);
+	self->incidencyMatrix->print();
+#endif
+
 	return PyBool_FromLong(true);
 }
 
-static PyObject* addEdge(SimpleGraph* self, PyObject* args) {
+static PyObject* addEdge(SimpleGraph* self, PyObject* args)
+{
 #ifdef DEBUG
 	printf("Add edge\n");
-	printEdges(self);
 #endif
+
 	int v1, v2;
-	if (!PyArg_ParseTuple(args, "|ii", &v1, &v2)) {
+	if (!PyArg_ParseTuple(args, "|ii", &v1, &v2))
 		return NULL;
-	}
-	createEdge(self, v1, v2);
+
+	self->incidencyMatrix->addEdge(v1, v2);
+
+#ifdef DEBUG
+	printf("V%d -> V%d\n", v1 + 1, v2 + 1);
+	self->incidencyMatrix->print();
+#endif
+
 	return PyBool_FromLong(true);
 }
 
-static PyObject* isEdge(SimpleGraph* self, PyObject* args) {
+static PyObject* isEdge(SimpleGraph* self, PyObject* args)
+{
 #ifdef DEBUG
-	printf("Check is edge\n");
-	printEdges(self);
+	//	printf("Check is edge\n");
 #endif
 	int v1, v2;
-	if (!PyArg_ParseTuple(args, "|ii", &v1, &v2)) {
+	if (!PyArg_ParseTuple(args, "|ii", &v1, &v2))
 		return NULL;
-	}
-	return PyBool_FromLong(self->listOfAdjacency[v1].isExist(v2));
+
+	return PyBool_FromLong(self->incidencyMatrix->isEdge(v1, v2));
 }
 
-static PyObject* addVertex(SimpleGraph* self) {
+static PyObject* addVertex(SimpleGraph* self) 
+{
 #ifdef DEBUG
 	printf("Add vertex\n");
 #endif
-	if (self->numberOfVertex < MAX_NUMBER_OF_VERTEX) {
-		self->numberOfVertex++;
+	if (self->incidencyMatrix->order() < MAX_NUMBER_OF_VERTEX)
+	{
+		self->incidencyMatrix->addVertex();
 	}
-	else {
+	else
+	{
 		PyErr_SetString(TooManyVerticesError, "");
 		return NULL;
 	}
+
 #ifdef DEBUG
-	printf("End\n");
+	self->incidencyMatrix->print();
 #endif
+
 	return PyBool_FromLong(true);
 }
 
-static PyObject* deleteVertex(SimpleGraph* self, PyObject* args) {
+static PyObject* deleteVertex(SimpleGraph* self, PyObject* args) 
+{
 #ifdef DEBUG
-	printf("Delete vartex\n");
+	printf("Delete vertex\n\tOrder = %d\n", self->incidencyMatrix->order());
 #endif
+
 	int vertex;
-	if (!PyArg_ParseTuple(args, "|i", &vertex)) {
+	if (!PyArg_ParseTuple(args, "|i", &vertex))
 		return NULL;
-	}
-	if (self->numberOfVertex == 1) {
+	
+	if (self->incidencyMatrix->order() == 1)
+	{
 		PyErr_SetString(NoVerticesError, "");
 		return false;
 	}
-	int size = self->listOfAdjacency[vertex].getSize();
-	for (int i = 0; i < size; i++) {
-		removeEdge(self, vertex, self->listOfAdjacency[vertex][i]);
-	}
-	for (int i = vertex; i < self->numberOfVertex - 1; i++) {
-		self->listOfAdjacency[i] = self->listOfAdjacency[i + 1];
-		for (int j = 0; j < self->numberOfVertex; j++) {
-			self->listOfAdjacency[j].changeValue(i + 1, i);
-		}
-	}
-	self->listOfAdjacency[self->numberOfVertex - 1].clear();
-	self->numberOfVertex--;
+
+	self->incidencyMatrix->deleteVertex(vertex);
+
+#ifdef DEBUG
+	self->incidencyMatrix->print();
+#endif
+
 	return PyBool_FromLong(true);
 }
 
-static PyMethodDef methods[] = {
-	{ "addEdge", (PyCFunction)addEdge, METH_VARARGS, nullptr },
+static PyMethodDef methods[] = 
+{
+	{ "order", (PyCFunction)order, METH_NOARGS, nullptr },
 	{ "addVertex", (PyCFunction)addVertex, METH_NOARGS, nullptr},
-	{ "deleteEdge", (PyCFunction)deleteEdge, METH_VARARGS, nullptr },
 	{ "deleteVertex", (PyCFunction)deleteVertex, METH_VARARGS, nullptr },
+	{ "addEdge", (PyCFunction)addEdge, METH_VARARGS, nullptr },
+	{ "deleteEdge", (PyCFunction)deleteEdge, METH_VARARGS, nullptr },
 	{ "isEdge", (PyCFunction)isEdge, METH_VARARGS, nullptr },
 	{ "fromString", (PyCFunction)fromString, METH_VARARGS, nullptr },
-	{ "order", (PyCFunction)order, METH_NOARGS, nullptr },
 	{ NULL }
 };
 
-static PyMemberDef members[] = {
+static PyMemberDef members[] = 
+{
 	{NULL}
 };
 
-static PyTypeObject SimpleGraphType = {
+static PyTypeObject SimpleGraphType = 
+{
 	PyVarObject_HEAD_INIT(NULL, 0)
 	"simple_graphs.IncidencyMatrix",
 	sizeof(SimpleGraph),
@@ -328,7 +532,7 @@ static PyTypeObject SimpleGraphType = {
 	(reprfunc)SimpleGraph__str__,
 	0, 0, 0,
 	Py_TPFLAGS_DEFAULT,
-	"Graph represented with incidency matrix with maximum number of 16 vertices",
+	"Graph represented with incidency matrix with maximum number of 16 vertices G6 representation",
 	0, 0,
 	(richcmpfunc)SimpleGraph__comp__,
 	0, 0, 0,
@@ -339,7 +543,8 @@ static PyTypeObject SimpleGraphType = {
 	(newfunc)SimpleGraph__new__
 };
 
-static PyModuleDef simple_graphs = {
+static PyModuleDef simple_graphs = 
+{
 	PyModuleDef_HEAD_INIT,
 	"simple_graphs",
 	"Macierz incydencji",
