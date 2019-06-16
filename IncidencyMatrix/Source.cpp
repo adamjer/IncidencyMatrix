@@ -492,7 +492,7 @@ static PyObject* deleteVertex(SimpleGraph* self, PyObject* args)
 	if (self->incidencyMatrix->order() == 1)
 	{
 		PyErr_SetString(NoVerticesError, "");
-		return false;
+		return NULL;
 	}
 
 	self->incidencyMatrix->deleteVertex(vertex);
